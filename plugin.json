@@ -1,10 +1,10 @@
 {
   "noteplan.minAppVersion": "3.7.2",
   "plugin.id": "harryguinness.BookReview",
-  "plugin.name": "Book Review Helper",
-  "plugin.description": "Automatically extracts book reviews from Daily Notes and creates dedicated notes in the Books Read folder",
+  "plugin.name": "Harry's Auto Filer",
+  "plugin.description": "Automatically extracts content from Daily Notes based on hashtags and files them into designated folders",
   "plugin.author": "Harry Guinness",
-  "plugin.version": "1.0.0",
+  "plugin.version": "1.5.0",
   "plugin.script": "script.js",
   "plugin.commands": [
     {
@@ -15,33 +15,41 @@
     },
     {
       "name": "Test Plugin",
-      "description": "Test if the Book Review Helper plugin is working correctly",
+      "description": "Test if Harry's Auto Filer plugin is working correctly",
       "jsFunction": "testPlugin",
       "alias": ["test"],
       "hidden": false
     },
     {
       "name": "onEditorWillSave",
-      "description": "Processes book reviews when a Daily Note with #bookreview is saved",
+      "description": "Processes content when a Daily Note with configured hashtags is saved",
       "jsFunction": "onEditorWillSave",
       "hidden": true
     },
     {
-      "name": "Extract Book Review",
-      "description": "Manually extract a book review from the current note",
-      "jsFunction": "extractBookReview",
-      "alias": ["book", "review"],
+      "name": "Extract Content",
+      "description": "Manually extract content from the current note based on configured hashtags",
+      "jsFunction": "extractContent",
+      "alias": ["extract", "file"],
       "hidden": false
     }
   ],
   "plugin.settings": [
     {
       "type": "string",
-      "key": "bookReviewFolder",
-      "title": "Book Review Folder",
-      "description": "The folder where book review notes will be saved",
-      "default": "30 - Resources/Books Read",
+      "key": "hashtagFolderPairs",
+      "title": "Hashtag-Folder Pairs",
+      "description": "Enter hashtag and folder pairs (one per line). Format: #hashtag -> folder/path\nExample:\n#bookreview -> 30 - Resources/Books Read\n#movie -> 30 - Resources/Movies",
+      "default": "#bookreview -> 30 - Resources/Books Read",
       "required": true
+    },
+    {
+      "type": "string",
+      "key": "headingName",
+      "title": "Heading Name",
+      "description": "The H2 heading name to look for (without ##). Leave empty to use the hashtag as the heading.",
+      "default": "Book Review",
+      "required": false
     }
   ]
 }
