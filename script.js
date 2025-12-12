@@ -6,7 +6,7 @@
 /**
  * Plugin initialization - called when plugin loads
  */
-export async function init() {
+async function init() {
   try {
     console.log('Book Review Helper Plugin v1.0.0 initializing...')
     await logToNote('Book Review Helper Plugin initialized successfully', 'INFO')
@@ -21,7 +21,7 @@ export async function init() {
 /**
  * Test command to verify plugin is working
  */
-export async function testPlugin() {
+async function testPlugin() {
   try {
     console.log('Test command executed')
     await logToNote('Test command executed successfully!', 'INFO')
@@ -96,7 +96,7 @@ async function logToNote(message, level = 'INFO') {
  * Triggered when a note is saved (onEditorWillSave trigger)
  * Checks if it's a Daily Note with #bookreview tag and processes it
  */
-export async function onEditorWillSave() {
+async function onEditorWillSave() {
   try {
     await logToNote('onEditorWillSave triggered', 'DEBUG')
 
@@ -136,7 +136,7 @@ export async function onEditorWillSave() {
 /**
  * Manual command to extract book review from current note
  */
-export async function extractBookReview() {
+async function extractBookReview() {
   try {
     await logToNote('Manual extractBookReview command triggered', 'INFO')
 
