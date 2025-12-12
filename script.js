@@ -181,7 +181,7 @@ async function processBookReview(sourceNote) {
   await logToNote('Found "## Book Review" heading', 'DEBUG')
 
   // Extract content under the Book Review heading
-  const reviewContent = extractContentUnderHeading(sourceNote, bookReviewHeading)
+  const reviewContent = await extractContentUnderHeading(sourceNote, bookReviewHeading)
 
   if (!reviewContent || reviewContent.trim().length === 0) {
     const msg = 'No content found under Book Review heading'
@@ -267,11 +267,15 @@ function findHeading(note, headingText, level) {
  * @param {Paragraph} heading - The heading paragraph
  * @returns {string} - The extracted content
  */
-function extractContentUnderHeading(note, heading) {
+async function extractContentUnderHeading(note, heading) {
   const paragraphs = note.paragraphs
   const headingIndex = paragraphs.indexOf(heading)
 
+  await logToNote(`Total paragraphs in note: ${paragraphs.length}`, 'DEBUG')
+  await logToNote(`Heading index: ${headingIndex}`, 'DEBUG')
+
   if (headingIndex === -1) {
+    await logToNote('Heading index is -1, returning empty', 'DEBUG')
     return ''
   }
 
@@ -281,19 +285,25 @@ function extractContentUnderHeading(note, heading) {
   for (let i = headingIndex + 1; i < paragraphs.length; i++) {
     const para = paragraphs[i]
 
+    await logToNote(`Para ${i}: type="${para.type}", headingLevel=${para.headingLevel}, content="${para.content ? para.content.substring(0, 50) : 'null'}"`, 'DEBUG')
+
     // Stop if we hit another H2 heading
     if (para.type === 'title' && para.headingLevel <= heading.headingLevel) {
+      await logToNote(`Stopping at para ${i} - hit heading of level ${para.headingLevel}`, 'DEBUG')
       break
     }
 
     // Skip empty paragraphs at the start
     if (content.length === 0 && para.content.trim().length === 0) {
+      await logToNote(`Skipping empty para ${i} at start`, 'DEBUG')
       continue
     }
 
+    await logToNote(`Adding para ${i} to content`, 'DEBUG')
     content.push(para.content)
   }
 
+  await logToNote(`Collected ${content.length} paragraphs`, 'DEBUG')
   return content.join('\n').trim()
 }
 
