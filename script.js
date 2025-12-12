@@ -269,7 +269,19 @@ function findHeading(note, headingText, level) {
  */
 async function extractContentUnderHeading(note, heading) {
   const paragraphs = note.paragraphs
-  const headingIndex = paragraphs.indexOf(heading)
+
+  // Find the heading by matching its properties instead of using indexOf
+  // (indexOf may fail if paragraphs array is regenerated)
+  let headingIndex = -1
+  for (let i = 0; i < paragraphs.length; i++) {
+    const para = paragraphs[i]
+    if (para.type === heading.type &&
+        para.headingLevel === heading.headingLevel &&
+        para.content === heading.content) {
+      headingIndex = i
+      break
+    }
+  }
 
   await logToNote(`Total paragraphs in note: ${paragraphs.length}`, 'DEBUG')
   await logToNote(`Heading index: ${headingIndex}`, 'DEBUG')
@@ -348,7 +360,18 @@ function extractBookTitle(content) {
  */
 function checkForExistingLink(note, heading) {
   const paragraphs = note.paragraphs
-  const headingIndex = paragraphs.indexOf(heading)
+
+  // Find the heading by matching its properties
+  let headingIndex = -1
+  for (let i = 0; i < paragraphs.length; i++) {
+    const para = paragraphs[i]
+    if (para.type === heading.type &&
+        para.headingLevel === heading.headingLevel &&
+        para.content === heading.content) {
+      headingIndex = i
+      break
+    }
+  }
 
   if (headingIndex === -1) {
     return false
@@ -454,7 +477,18 @@ ${content}
 async function addLinkToSourceNote(sourceNote, heading, bookNote) {
   try {
     const paragraphs = sourceNote.paragraphs
-    const headingIndex = paragraphs.indexOf(heading)
+
+    // Find the heading by matching its properties
+    let headingIndex = -1
+    for (let i = 0; i < paragraphs.length; i++) {
+      const para = paragraphs[i]
+      if (para.type === heading.type &&
+          para.headingLevel === heading.headingLevel &&
+          para.content === heading.content) {
+        headingIndex = i
+        break
+      }
+    }
 
     if (headingIndex === -1) {
       await logToNote('Could not find heading in source note paragraphs', 'ERROR')
