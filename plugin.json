@@ -1,0 +1,23 @@
+{
+  "noteplan.minAppVersion": "3.7.2",
+  "plugin.id": "harryguinness.BookReview",
+  "plugin.name": "Book Review Helper",
+  "plugin.description": "Automatically extracts book reviews from Daily Notes and creates dedicated notes in the Books Read folder",
+  "plugin.author": "Harry Guinness",
+  "plugin.version": "1.0.0",
+  "plugin.script": "script.js",
+  "plugin.commands": [
+    {
+      "name": "onEditorWillSave",
+      "description": "Processes book reviews when a Daily Note with #bookreview is saved",
+      "jsFunction": "onEditorWillSave",
+      "hidden": true
+    },
+    {
+      "name": "Extract Book Review",
+      "description": "Manually extract a book review from the current note",
+      "jsFunction": "extractBookReview",
+      "alias": ["book", "review"]
+    }
+  ]
+}
