@@ -1,5 +1,3 @@
-// @flow
-
 /**
  * Book Review Helper Plugin for NotePlan
  * Automatically extracts book reviews from Daily Notes and creates dedicated notes
@@ -8,7 +6,7 @@
 /**
  * Plugin initialization - called when plugin loads
  */
-export async function init(): Promise<void> {
+async function init() {
   try {
     console.log('Book Review Helper Plugin v1.0.0 initializing...')
     await logToNote('Book Review Helper Plugin initialized successfully', 'INFO')
@@ -23,7 +21,7 @@ export async function init(): Promise<void> {
 /**
  * Test command to verify plugin is working
  */
-export async function testPlugin(): Promise<void> {
+async function testPlugin() {
   try {
     console.log('Test command executed')
     await logToNote('Test command executed successfully!', 'INFO')
@@ -52,7 +50,7 @@ export async function testPlugin(): Promise<void> {
  * @param {string} message - The message to log
  * @param {string} level - Log level: 'INFO', 'ERROR', 'DEBUG'
  */
-async function logToNote(message: string, level: string = 'INFO'): Promise<void> {
+async function logToNote(message, level = 'INFO') {
   try {
     const logNoteName = 'Plugin Log'
     // Get array of matching notes (using true for returnMultiple)
@@ -98,7 +96,7 @@ async function logToNote(message: string, level: string = 'INFO'): Promise<void>
  * Triggered when a note is saved (onEditorWillSave trigger)
  * Checks if it's a Daily Note with #bookreview tag and processes it
  */
-export async function onEditorWillSave(): Promise<void> {
+async function onEditorWillSave() {
   try {
     await logToNote('onEditorWillSave triggered', 'DEBUG')
 
@@ -138,7 +136,7 @@ export async function onEditorWillSave(): Promise<void> {
 /**
  * Manual command to extract book review from current note
  */
-export async function extractBookReview(): Promise<void> {
+async function extractBookReview() {
   try {
     await logToNote('Manual extractBookReview command triggered', 'INFO')
 
@@ -167,7 +165,7 @@ export async function extractBookReview(): Promise<void> {
  * Main function to process the book review
  * @param {Note} sourceNote - The note containing the book review
  */
-async function processBookReview(sourceNote: Note): Promise<void> {
+async function processBookReview(sourceNote) {
   await logToNote(`Starting processBookReview for: ${sourceNote.title || 'Untitled'}`, 'DEBUG')
 
   // Find the "Book Review" heading
@@ -247,7 +245,7 @@ async function processBookReview(sourceNote: Note): Promise<void> {
  * @param {number} level - The heading level (2 for ##)
  * @returns {Paragraph|null} - The heading paragraph or null
  */
-function findHeading(note: Note, headingText: string, level: number): ?Paragraph {
+function findHeading(note, headingText, level) {
   const paragraphs = note.paragraphs
 
   for (const para of paragraphs) {
@@ -269,7 +267,7 @@ function findHeading(note: Note, headingText: string, level: number): ?Paragraph
  * @param {Paragraph} heading - The heading paragraph
  * @returns {string} - The extracted content
  */
-function extractContentUnderHeading(note: Note, heading: Paragraph): string {
+function extractContentUnderHeading(note, heading) {
   const paragraphs = note.paragraphs
   const headingIndex = paragraphs.indexOf(heading)
 
@@ -305,7 +303,7 @@ function extractContentUnderHeading(note: Note, heading: Paragraph): string {
  * @param {string} content - The review content
  * @returns {string|null} - The extracted book title
  */
-function extractBookTitle(content: string): ?string {
+function extractBookTitle(content) {
   const lines = content.split('\n')
 
   // Look for H3 heading (###)
@@ -338,7 +336,7 @@ function extractBookTitle(content: string): ?string {
  * @param {Paragraph} heading - The heading paragraph
  * @returns {boolean} - True if link exists
  */
-function checkForExistingLink(note: Note, heading: Paragraph): boolean {
+function checkForExistingLink(note, heading) {
   const paragraphs = note.paragraphs
   const headingIndex = paragraphs.indexOf(heading)
 
@@ -371,7 +369,7 @@ function checkForExistingLink(note: Note, heading: Paragraph): boolean {
  * @param {Note} sourceNote - The source Daily Note
  * @returns {Note|null} - The created note or null
  */
-async function createBookReviewNote(title: string, content: string, sourceNote: Note): Promise<?Note> {
+async function createBookReviewNote(title, content, sourceNote) {
   try {
     // Get the folder path from settings
     const folderPath = DataStore.settings.bookReviewFolder || '30 - Resources/Books Read'
@@ -443,7 +441,7 @@ ${content}
  * @param {Paragraph} heading - The Book Review heading
  * @param {Note} bookNote - The created book review note
  */
-async function addLinkToSourceNote(sourceNote: Note, heading: Paragraph, bookNote: Note): Promise<void> {
+async function addLinkToSourceNote(sourceNote, heading, bookNote) {
   try {
     const paragraphs = sourceNote.paragraphs
     const headingIndex = paragraphs.indexOf(heading)
