@@ -1,6 +1,6 @@
 /**
- * Book Review Helper Plugin for NotePlan
- * Automatically extracts book reviews from Daily Notes and creates dedicated notes
+ * Harry's Auto Filer Plugin for NotePlan
+ * Automatically extracts content from Daily Notes based on hashtags and files them into designated folders
  */
 
 /**
@@ -8,10 +8,10 @@
  */
 async function init() {
   try {
-    console.log('Book Review Helper Plugin v1.0.0 initializing...')
-    await logToNote('Book Review Helper Plugin initialized successfully', 'INFO')
+    console.log('Harry\'s Auto Filer Plugin v1.5.0 initializing...')
+    await logToNote('Harry\'s Auto Filer Plugin initialized successfully', 'INFO')
     await logToNote(`Plugin ID: harryguinness.BookReview`, 'INFO')
-    await logToNote(`Available commands: onEditorWillSave, extractBookReview, testPlugin`, 'INFO')
+    await logToNote(`Available commands: onEditorWillSave, extractContent, testPlugin`, 'INFO')
     console.log('Plugin initialized - check Plugin Log note for details')
   } catch (error) {
     console.log(`Error during plugin initialization: ${String(error)}`)
@@ -93,8 +93,57 @@ async function logToNote(message, level = 'INFO') {
 }
 
 /**
+ * Parse hashtag-folder pairs from settings
+ * @returns {Array<{hashtag: string, folder: string}>} - Array of hashtag-folder pairs
+ */
+function parseHashtagFolderPairs() {
+  const pairsString = DataStore.settings.hashtagFolderPairs || '#bookreview -> 30 - Resources/Books Read'
+  const pairs = []
+
+  const lines = pairsString.split('\n')
+  for (const line of lines) {
+    const trimmedLine = line.trim()
+    if (trimmedLine.length === 0 || trimmedLine.startsWith('//')) {
+      continue // Skip empty lines and comments
+    }
+
+    // Parse format: #hashtag -> folder/path
+    const match = trimmedLine.match(/^(#\w+)\s*->\s*(.+)$/)
+    if (match) {
+      const hashtag = match[1].toLowerCase()
+      const folder = match[2].trim()
+      pairs.push({ hashtag, folder })
+    }
+  }
+
+  return pairs
+}
+
+/**
+ * Find which hashtag (if any) from the configured pairs exists in the note
+ * @param {Note} note - The note to check
+ * @returns {Object|null} - The matching pair or null
+ */
+function findMatchingHashtag(note) {
+  if (!note.hashtags || note.hashtags.length === 0) {
+    return null
+  }
+
+  const pairs = parseHashtagFolderPairs()
+  const noteHashtags = note.hashtags.map(tag => tag.toLowerCase())
+
+  for (const pair of pairs) {
+    if (noteHashtags.includes(pair.hashtag)) {
+      return pair
+    }
+  }
+
+  return null
+}
+
+/**
  * Triggered when a note is saved (onEditorWillSave trigger)
- * Checks if it's a Daily Note with #bookreview tag and processes it
+ * Checks if it's a Daily Note with configured hashtags and processes it
  */
 async function onEditorWillSave() {
   try {
@@ -116,16 +165,17 @@ async function onEditorWillSave() {
       return
     }
 
-    // Check if note has #bookreview tag
-    if (!note.hashtags || !note.hashtags.includes('#bookreview')) {
-      await logToNote('No #bookreview tag found, skipping', 'DEBUG')
+    // Check if note has any configured hashtag
+    const matchingPair = findMatchingHashtag(note)
+    if (!matchingPair) {
+      await logToNote('No configured hashtags found, skipping', 'DEBUG')
       return
     }
 
-    await logToNote('Found #bookreview tag, processing...', 'INFO')
+    await logToNote(`Found ${matchingPair.hashtag} tag, processing...`, 'INFO')
 
-    // Process the book review
-    await processBookReview(note)
+    // Process the content
+    await processContent(note, matchingPair)
   } catch (error) {
     const errorMsg = `Error in onEditorWillSave: ${error.message || error}`
     console.log(errorMsg)
@@ -134,11 +184,11 @@ async function onEditorWillSave() {
 }
 
 /**
- * Manual command to extract book review from current note
+ * Manual command to extract content from current note
  */
-async function extractBookReview() {
+async function extractContent() {
   try {
-    await logToNote('Manual extractBookReview command triggered', 'INFO')
+    await logToNote('Manual extractContent command triggered', 'INFO')
 
     const note = Editor.note
 
@@ -150,92 +200,111 @@ async function extractBookReview() {
 
     await logToNote(`Manual extraction from note: ${note.title || 'Untitled'}`, 'INFO')
 
-    await processBookReview(note)
+    // Check if note has any configured hashtag
+    const matchingPair = findMatchingHashtag(note)
+    if (!matchingPair) {
+      await logToNote('No configured hashtags found in note', 'ERROR')
+      await CommandBar.prompt('No configured hashtags found', 'This note does not contain any of the configured hashtags. Please check your plugin settings.')
+      return
+    }
+
+    await processContent(note, matchingPair)
     await logToNote('Manual extraction completed successfully', 'INFO')
-    await CommandBar.prompt('Book Review Processed', 'The book review has been extracted and a new note has been created.')
+    await CommandBar.prompt('Content Processed', `Content for ${matchingPair.hashtag} has been extracted and a new note has been created.`)
   } catch (error) {
-    const errorMsg = `Error in extractBookReview: ${error.message || error}`
+    const errorMsg = `Error in extractContent: ${error.message || error}`
     console.log(errorMsg)
     await logToNote(errorMsg, 'ERROR')
-    await CommandBar.prompt('Error', `Failed to extract book review: ${error.message}`)
+    await CommandBar.prompt('Error', `Failed to extract content: ${error.message}`)
   }
 }
 
 /**
- * Main function to process the book review
- * @param {Note} sourceNote - The note containing the book review
+ * Legacy function name for backward compatibility
  */
-async function processBookReview(sourceNote) {
-  await logToNote(`Starting processBookReview for: ${sourceNote.title || 'Untitled'}`, 'DEBUG')
+async function extractBookReview() {
+  await extractContent()
+}
 
-  // Find the "Book Review" heading
-  const bookReviewHeading = findHeading(sourceNote, 'Book Review', 2)
+/**
+ * Main function to process the content based on hashtag
+ * @param {Note} sourceNote - The note containing the content
+ * @param {Object} pair - The hashtag-folder pair {hashtag, folder}
+ */
+async function processContent(sourceNote, pair) {
+  await logToNote(`Starting processContent for: ${sourceNote.title || 'Untitled'} with ${pair.hashtag}`, 'DEBUG')
 
-  if (!bookReviewHeading) {
-    const msg = 'No "## Book Review" heading found in note'
+  // Get the heading name from settings or derive from hashtag
+  const headingName = DataStore.settings.headingName || pair.hashtag.substring(1)
+
+  // Find the heading
+  const contentHeading = findHeading(sourceNote, headingName, 2)
+
+  if (!contentHeading) {
+    const msg = `No "## ${headingName}" heading found in note`
     console.log(msg)
     await logToNote(msg, 'INFO')
     return
   }
 
-  await logToNote('Found "## Book Review" heading', 'DEBUG')
+  await logToNote(`Found "## ${headingName}" heading`, 'DEBUG')
 
-  // Extract content under the Book Review heading
-  const reviewContent = await extractContentUnderHeading(sourceNote, bookReviewHeading)
+  // Extract content under the heading
+  const extractedContent = await extractContentUnderHeading(sourceNote, contentHeading)
 
-  if (!reviewContent || reviewContent.trim().length === 0) {
-    const msg = 'No content found under Book Review heading'
+  if (!extractedContent || extractedContent.trim().length === 0) {
+    const msg = `No content found under ${headingName} heading`
     console.log(msg)
     await logToNote(msg, 'INFO')
     return
   }
 
-  await logToNote(`Extracted ${reviewContent.length} characters of review content`, 'DEBUG')
+  await logToNote(`Extracted ${extractedContent.length} characters of content`, 'DEBUG')
 
-  // Extract or prompt for book title
-  const bookTitle = extractBookTitle(reviewContent)
+  // Extract title from content
+  const contentTitle = extractContentTitle(extractedContent)
 
-  if (!bookTitle) {
-    const msg = 'Could not determine book title'
+  if (!contentTitle) {
+    const msg = 'Could not determine content title'
     console.log(msg)
     await logToNote(msg, 'ERROR')
     return
   }
 
-  await logToNote(`Extracted book title: "${bookTitle}"`, 'INFO')
+  await logToNote(`Extracted title: "${contentTitle}"`, 'INFO')
 
-  // Check if book review note already exists
-  const bookNoteTitle = `Book Review: ${bookTitle}`
-  const existingNotes = DataStore.projectNoteByTitle(bookNoteTitle, true, false)
+  // Check if note already exists
+  const noteTitle = contentTitle
+  const existingNotes = DataStore.projectNoteByTitle(noteTitle, true, false)
 
-  // Check if we already processed this review (look for link marker)
-  const hasLinkMarker = checkForExistingLink(sourceNote, bookReviewHeading)
+  // Check if we already processed this content (look for link marker)
+  const hasLinkMarker = checkForExistingLink(sourceNote, contentHeading)
 
   if (hasLinkMarker && existingNotes.length > 0) {
-    const msg = `Book review already processed (found ${existingNotes.length} existing note(s) and link marker)`
+    const msg = `Content already processed (found ${existingNotes.length} existing note(s) and link marker)`
     console.log(msg)
     await logToNote(msg, 'INFO')
     return
   }
 
-  await logToNote(`Creating new book review note: "${bookNoteTitle}"`, 'INFO')
+  await logToNote(`Creating new note: "${noteTitle}"`, 'INFO')
 
-  // Create the book review note
-  const bookNote = await createBookReviewNote(bookNoteTitle, reviewContent, sourceNote)
+  // Create the note
+  const createdNote = await createNote(noteTitle, extractedContent, sourceNote, pair)
 
-  if (!bookNote) {
-    const msg = 'Failed to create book review note'
+  if (!createdNote) {
+    const msg = 'Failed to create note'
     console.log(msg)
     await logToNote(msg, 'ERROR')
     return
   }
 
-  await logToNote(`Book review note created successfully: ${bookNote.filename || bookNoteTitle}`, 'INFO')
+  await logToNote(`Note created successfully: ${createdNote.filename || noteTitle}`, 'INFO')
 
-  // Add link to the book review note in the Daily Note
-  await addLinkToSourceNote(sourceNote, bookReviewHeading, bookNote)
+  // Add link to the note in the Daily Note
+  await addLinkToSourceNote(sourceNote, contentHeading, createdNote)
   await logToNote('Added link to source note', 'INFO')
-  await logToNote('Book review processing completed successfully', 'INFO')
+  await logToNote('Content processing completed successfully', 'INFO')
 }
 
 /**
@@ -320,12 +389,12 @@ async function extractContentUnderHeading(note, heading) {
 }
 
 /**
- * Extract book title from review content
+ * Extract content title from extracted content
  * Looks for H3 heading, bold text, or first line
- * @param {string} content - The review content
- * @returns {string|null} - The extracted book title
+ * @param {string} content - The extracted content
+ * @returns {string|null} - The extracted title
  */
-function extractBookTitle(content) {
+function extractContentTitle(content) {
   const lines = content.split('\n')
 
   // Look for H3 heading (###)
@@ -350,6 +419,35 @@ function extractBookTitle(content) {
   }
 
   return 'Untitled Book'
+}
+
+/**
+ * Clean the content by removing H3 title line and the specified hashtag
+ * @param {string} content - The raw content
+ * @param {string} hashtag - The hashtag to remove (e.g., '#bookreview')
+ * @returns {string} - The cleaned content
+ */
+function cleanContent(content, hashtag) {
+  const lines = content.split('\n')
+  const cleanedLines = []
+
+  for (const line of lines) {
+    // Skip H3 heading lines
+    if (line.trim().startsWith('###')) {
+      continue
+    }
+
+    // Remove the specific hashtag from lines
+    const hashtagPattern = new RegExp(hashtag.replace('#', '#') + '\\b', 'gi')
+    const cleanedLine = line.replace(hashtagPattern, '').trim()
+
+    // Only add non-empty lines or preserve intentional empty lines
+    if (cleanedLine.length > 0 || cleanedLines.length > 0) {
+      cleanedLines.push(cleanedLine)
+    }
+  }
+
+  return cleanedLines.join('\n').trim()
 }
 
 /**
@@ -386,8 +484,8 @@ function checkForExistingLink(note, heading) {
       break
     }
 
-    // Look for our marker comment or a link to Books Read folder
-    if (para.content.includes('[[Book Review:') || para.content.includes('➡️')) {
+    // Look for our marker comment or a link to book review note
+    if (para.content.match(/\[\[.*?\]\]/)) {
       return true
     }
   }
@@ -396,16 +494,17 @@ function checkForExistingLink(note, heading) {
 }
 
 /**
- * Create a new book review note in the Books Read folder
- * @param {string} title - The book note title
- * @param {string} content - The review content
+ * Create a new note in the designated folder
+ * @param {string} title - The note title
+ * @param {string} content - The content
  * @param {Note} sourceNote - The source Daily Note
+ * @param {Object} pair - The hashtag-folder pair {hashtag, folder}
  * @returns {Note|null} - The created note or null
  */
-async function createBookReviewNote(title, content, sourceNote) {
+async function createNote(title, content, sourceNote, pair) {
   try {
-    // Get the folder path from settings
-    const folderPath = DataStore.settings.bookReviewFolder || '30 - Resources/Books Read'
+    // Get the folder path from the pair
+    const folderPath = pair.folder
     const filename = `${folderPath}/${title}.md`
 
     await logToNote(`Attempting to create note in folder: ${folderPath}`, 'DEBUG')
@@ -418,18 +517,15 @@ async function createBookReviewNote(title, content, sourceNote) {
 
     await logToNote(`Source link: ${sourceLink}`, 'DEBUG')
 
+    // Clean the content (remove H3 title and the configured hashtag)
+    const cleanedContent = cleanContent(content, pair.hashtag)
+
     // Build the note content
     const noteContent = `# ${title}
 
-📅 Reviewed on: ${sourceLink}
+Reviewed on: ${sourceLink}
 
----
-
-${content}
-
----
-
-#book #review
+${cleanedContent}
 `
 
     // Create the note
@@ -445,9 +541,9 @@ ${content}
     await logToNote(`Note file created: ${newFilename}`, 'DEBUG')
 
     // Get the note object
-    const bookNote = DataStore.projectNoteByFilename(newFilename)
+    const createdNote = DataStore.projectNoteByFilename(newFilename)
 
-    if (!bookNote) {
+    if (!createdNote) {
       const msg = 'Failed to retrieve created note'
       console.log(msg)
       await logToNote(msg, 'ERROR')
@@ -455,13 +551,13 @@ ${content}
     }
 
     // Set the content
-    bookNote.content = noteContent
+    createdNote.content = noteContent
 
     await logToNote('Note content set successfully', 'DEBUG')
 
-    return bookNote
+    return createdNote
   } catch (error) {
-    const errorMsg = `Error creating book review note: ${error.message || error}`
+    const errorMsg = `Error creating note: ${error.message || error}`
     console.log(errorMsg)
     await logToNote(errorMsg, 'ERROR')
     return null
@@ -469,12 +565,12 @@ ${content}
 }
 
 /**
- * Add a link to the book review note in the source Daily Note
+ * Add a link to the created note in the source Daily Note
  * @param {Note} sourceNote - The Daily Note
- * @param {Paragraph} heading - The Book Review heading
- * @param {Note} bookNote - The created book review note
+ * @param {Paragraph} heading - The heading
+ * @param {Note} createdNote - The created note
  */
-async function addLinkToSourceNote(sourceNote, heading, bookNote) {
+async function addLinkToSourceNote(sourceNote, heading, createdNote) {
   try {
     const paragraphs = sourceNote.paragraphs
 
@@ -510,7 +606,7 @@ async function addLinkToSourceNote(sourceNote, heading, bookNote) {
     }
 
     // Create the link text
-    const linkText = `\n➡️ [[${bookNote.title}]]`
+    const linkText = `\n[[${createdNote.title}]]`
 
     await logToNote(`Inserting link at position ${lastIndex + 1}: ${linkText.trim()}`, 'DEBUG')
 
