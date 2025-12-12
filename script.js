@@ -205,7 +205,7 @@ async function processBookReview(sourceNote) {
   await logToNote(`Extracted book title: "${bookTitle}"`, 'INFO')
 
   // Check if book review note already exists
-  const bookNoteTitle = `Book Review: ${bookTitle}`
+  const bookNoteTitle = bookTitle
   const existingNotes = DataStore.projectNoteByTitle(bookNoteTitle, true, false)
 
   // Check if we already processed this review (look for link marker)
@@ -353,6 +353,33 @@ function extractBookTitle(content) {
 }
 
 /**
+ * Clean the review content by removing H3 title line and #bookreview tag
+ * @param {string} content - The raw review content
+ * @returns {string} - The cleaned content
+ */
+function cleanReviewContent(content) {
+  const lines = content.split('\n')
+  const cleanedLines = []
+
+  for (const line of lines) {
+    // Skip H3 heading lines
+    if (line.trim().startsWith('###')) {
+      continue
+    }
+
+    // Remove #bookreview tag from lines
+    const cleanedLine = line.replace(/#bookreview\b/g, '').trim()
+
+    // Only add non-empty lines or preserve intentional empty lines
+    if (cleanedLine.length > 0 || cleanedLines.length > 0) {
+      cleanedLines.push(cleanedLine)
+    }
+  }
+
+  return cleanedLines.join('\n').trim()
+}
+
+/**
  * Check if a link to book review already exists under the heading
  * @param {Note} note - The source note
  * @param {Paragraph} heading - The heading paragraph
@@ -386,8 +413,8 @@ function checkForExistingLink(note, heading) {
       break
     }
 
-    // Look for our marker comment or a link to Books Read folder
-    if (para.content.includes('[[Book Review:') || para.content.includes('➡️')) {
+    // Look for our marker comment or a link to book review note
+    if (para.content.match(/\[\[.*?\]\]/)) {
       return true
     }
   }
@@ -418,18 +445,15 @@ async function createBookReviewNote(title, content, sourceNote) {
 
     await logToNote(`Source link: ${sourceLink}`, 'DEBUG')
 
+    // Clean the content (remove H3 title and #bookreview tag)
+    const cleanedContent = cleanReviewContent(content)
+
     // Build the note content
     const noteContent = `# ${title}
 
-📅 Reviewed on: ${sourceLink}
+Reviewed on: ${sourceLink}
 
----
-
-${content}
-
----
-
-#book #review
+${cleanedContent}
 `
 
     // Create the note
@@ -510,7 +534,7 @@ async function addLinkToSourceNote(sourceNote, heading, bookNote) {
     }
 
     // Create the link text
-    const linkText = `\n➡️ [[${bookNote.title}]]`
+    const linkText = `\n[[${bookNote.title}]]`
 
     await logToNote(`Inserting link at position ${lastIndex + 1}: ${linkText.trim()}`, 'DEBUG')
 
