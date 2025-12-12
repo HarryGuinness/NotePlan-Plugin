@@ -20,5 +20,15 @@
       "alias": ["book", "review"],
       "hidden": false
     }
+  ],
+  "plugin.settings": [
+    {
+      "type": "string",
+      "key": "bookReviewFolder",
+      "title": "Book Review Folder",
+      "description": "The folder where book review notes will be saved",
+      "default": "30 - Resources/Books Read",
+      "required": true
+    }
   ]
 }
