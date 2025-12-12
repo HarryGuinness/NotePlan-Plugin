@@ -34,17 +34,19 @@ A NotePlan plugin that automatically extracts book reviews from your Daily Notes
 
 1. Open NotePlan
 2. Go to Preferences → Plugins
-3. Find "Book Review Helper" in the list
+3. Find "Harry's Auto Filer" in the list
 4. Make sure it's enabled (toggle should be ON)
 
 ### Step 2: Test the Plugin
 
 1. Open Command Bar (Cmd+J or Ctrl+J)
 2. Type "Test Plugin" and press Enter
-3. Check if a "Plugin Log" note appears in your notes
-4. If the test succeeds, you'll see a confirmation message
+3. You should see a confirmation message
+4. If the test fails, check NotePlan's Console (View → Developer → Show Console)
 
-### Step 3: Set Up Automatic Trigger (Choose ONE option)
+### Step 3: Enable Auto-Processing (REQUIRED for automatic operation)
+
+**⚠️ IMPORTANT:** The plugin will NOT process content automatically unless you complete this step. You must add a trigger to your Daily Note template or individual notes.
 
 **Option A: Add to Daily Note Template (RECOMMENDED)**
 
@@ -205,15 +207,24 @@ These are hardcoded but can be modified in the `script.js` file if needed.
 
 ### Plugin doesn't trigger automatically
 
-**Run the "Test Plugin" command first to verify the plugin is working.**
+**This is the most common issue!** The plugin requires a trigger in your note's frontmatter to work automatically.
 
-Then check:
-- Make sure you added the trigger to your note's frontmatter (see Step 3 in Setup)
-- Verify you have the `#bookreview` tag in your note
-- Verify you have a `## Book Review` heading (exactly H2 level, not H1 or H3)
-- Make sure you're using a Daily Note (Calendar note type)
-- Check the "Plugin Log" note for debug messages
-- Try the manual "Extract Book Review" command to see if that works
+**Solution:**
+1. Check if your Daily Note has the trigger in its frontmatter:
+   ```yaml
+   ---
+   triggers: onEditorWillSave => harryguinness.BookReview.onEditorWillSave
+   ---
+   ```
+2. If not, add it to your Daily Note template (see Step 3 in Setup above)
+3. Or add it manually to the top of each Daily Note where you want auto-processing
+
+**Other checks:**
+- Run the "Test Plugin" command first to verify the plugin is working
+- Verify you have the configured hashtag in your note (e.g., `#bookreview`)
+- Verify you have the correct heading (e.g., `## Book Review` - exactly H2 level)
+- Make sure you're using a Calendar note (Daily/Weekly/Monthly note)
+- Try the manual "Extract Content" command to see if that works
 
 ### Book review note not created
 
