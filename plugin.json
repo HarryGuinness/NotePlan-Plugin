@@ -17,7 +17,8 @@
       "name": "Extract Book Review",
       "description": "Manually extract a book review from the current note",
       "jsFunction": "extractBookReview",
-      "alias": ["book", "review"]
+      "alias": ["book", "review"],
+      "hidden": false
     }
   ]
 }
