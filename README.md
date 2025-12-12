@@ -19,27 +19,86 @@ A NotePlan plugin that automatically extracts book reviews from your Daily Notes
 2. Go to Preferences → Plugins
 3. Search for "Book Review Helper"
 4. Click Install
+5. **IMPORTANT**: Follow the setup steps below!
 
 ### Manual Installation
 
 1. Clone this repository or download the files
 2. Copy the plugin folder to your NotePlan plugins directory
 3. In NotePlan, go to Preferences → Plugins → Reload Plugin List
+4. **IMPORTANT**: Follow the setup steps below!
+
+## ⚠️ REQUIRED SETUP STEPS
+
+### Step 1: Verify Plugin Installation
+
+1. Open NotePlan
+2. Go to Preferences → Plugins
+3. Find "Book Review Helper" in the list
+4. Make sure it's enabled (toggle should be ON)
+
+### Step 2: Test the Plugin
+
+1. Open Command Bar (Cmd+J or Ctrl+J)
+2. Type "Test Plugin" and press Enter
+3. Check if a "Plugin Log" note appears in your notes
+4. If the test succeeds, you'll see a confirmation message
+
+### Step 3: Set Up Automatic Trigger (Choose ONE option)
+
+**Option A: Add to Daily Note Template (RECOMMENDED)**
+
+1. Go to NotePlan Preferences → Templates
+2. Find your Daily Note template
+3. Add this to the **very top** of the template:
+
+```yaml
+---
+triggers: onEditorWillSave => harryguinness.BookReview.onEditorWillSave
+---
+```
+
+4. Save the template
+5. All new Daily Notes will now automatically process book reviews!
+
+**Option B: Add to Individual Notes (Manual)**
+
+Add the following to the top of any Daily Note you want to process:
+
+```yaml
+---
+triggers: onEditorWillSave => harryguinness.BookReview.onEditorWillSave
+---
+```
+
+**Option C: Use Manual Command Only**
+
+If you don't want automatic processing, just use the "Extract Book Review" command manually whenever you want to process a review.
+
+### Step 4: Create the Book Review Folder
+
+1. In NotePlan, create this folder structure:
+   ```
+   30 - Resources/
+     └── Books Read/
+   ```
+
+2. Or configure a different folder in Preferences → Plugins → Book Review Helper settings
 
 ## Usage
 
-### Automatic Mode
+### Automatic Mode (if you completed Step 3, Option A or B)
 
-1. Create or open a Daily Note
+1. Create or open a Daily Note (one with the trigger in frontmatter)
 2. Add the `#bookreview` tag anywhere in the note
 3. Add a `## Book Review` heading
 4. Write your book review under this heading
-5. Save the note
+5. Save the note (Cmd+S or Ctrl+S)
 
 The plugin will automatically:
 - Extract the review content
 - Detect the book title (from H3 heading, bold text, or first line)
-- Create a new note in `30 - Resources/Books Read`
+- Create a new note in your configured folder
 - Add a link back to your Daily Note
 - Add a link to the book review note at the end of your review section
 
@@ -50,18 +109,6 @@ You can also manually trigger the extraction:
 1. Open a note with a `## Book Review` section
 2. Open Command Bar (Cmd+J or Ctrl+J)
 3. Type "Extract Book Review" and press Enter
-
-### Setting Up the Trigger
-
-To enable automatic processing, add this to your Daily Note template frontmatter:
-
-```yaml
----
-triggers: onEditorWillSave => harryguinness.BookReview.onEditorWillSave
----
-```
-
-Or add it manually to any Daily Note you want to process.
 
 ## Book Review Format
 
@@ -145,24 +192,49 @@ These are hardcoded but can be modified in the `script.js` file if needed.
 
 ## Troubleshooting
 
+### Plugin Log note not being created
+
+**This means the plugin isn't loading at all. Try these steps:**
+
+1. Open NotePlan Preferences → Plugins
+2. Find "Book Review Helper" and make sure it's enabled
+3. Click "Reload Plugin List"
+4. Try running "Test Plugin" command again
+5. Check the NotePlan console (View → Developer → Show Console) for errors
+6. Make sure the plugin files are in the correct directory
+
 ### Plugin doesn't trigger automatically
 
-- Make sure you have the `#bookreview` tag in your note
+**Run the "Test Plugin" command first to verify the plugin is working.**
+
+Then check:
+- Make sure you added the trigger to your note's frontmatter (see Step 3 in Setup)
+- Verify you have the `#bookreview` tag in your note
 - Verify you have a `## Book Review` heading (exactly H2 level, not H1 or H3)
-- Check that the trigger is set up in your note's frontmatter
 - Make sure you're using a Daily Note (Calendar note type)
+- Check the "Plugin Log" note for debug messages
+- Try the manual "Extract Book Review" command to see if that works
 
 ### Book review note not created
 
-- Verify the `30 - Resources/Books Read` folder exists
-- Check the NotePlan console (View → Developer → Show Console) for errors
-- Make sure there's content under the `## Book Review` heading
+1. First, check the "Plugin Log" note for error messages
+2. Verify the configured folder exists (default: `30 - Resources/Books Read`)
+3. Check the NotePlan console (View → Developer → Show Console) for errors
+4. Make sure there's content under the `## Book Review` heading
+5. Try running "Test Plugin" to verify basic functionality
 
 ### Duplicate notes being created
 
 - The plugin checks for existing notes by title
 - If you manually renamed or deleted the link, it might create a duplicate
 - The plugin looks for the ➡️ symbol or existing links to prevent duplicates
+
+### How to view detailed logs
+
+1. Open the "Plugin Log" note in NotePlan
+2. All plugin activity is logged here with timestamps
+3. Look for ERROR messages to identify problems
+4. DEBUG messages show detailed execution flow
 
 ## Technical Details
 
