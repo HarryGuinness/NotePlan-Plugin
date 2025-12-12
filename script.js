@@ -422,18 +422,24 @@ function extractContentTitle(content) {
 }
 
 /**
- * Clean the content by removing H3 title line and the specified hashtag
+ * Clean the content by removing H3 title line, duplicate title lines, and the specified hashtag
  * @param {string} content - The raw content
  * @param {string} hashtag - The hashtag to remove (e.g., '#bookreview')
+ * @param {string} title - The title to remove if it appears as a plain text line
  * @returns {string} - The cleaned content
  */
-function cleanContent(content, hashtag) {
+function cleanContent(content, hashtag, title = '') {
   const lines = content.split('\n')
   const cleanedLines = []
 
   for (const line of lines) {
     // Skip H3 heading lines
     if (line.trim().startsWith('###')) {
+      continue
+    }
+
+    // Skip lines that match the title exactly (case-sensitive)
+    if (title && line.trim() === title) {
       continue
     }
 
@@ -517,15 +523,13 @@ async function createNote(title, content, sourceNote, pair) {
 
     await logToNote(`Source link: ${sourceLink}`, 'DEBUG')
 
-    // Clean the content (remove H3 title and the configured hashtag)
-    const cleanedContent = cleanContent(content, pair.hashtag)
+    // Clean the content (remove H3 title, duplicate title line, and the configured hashtag)
+    const cleanedContent = cleanContent(content, pair.hashtag, title)
 
     // Build the note content
     const noteContent = `# ${title}
-
-Reviewed on: ${sourceLink}
-
 ${cleanedContent}
+Reviewed on: ${sourceLink}
 `
 
     // Create the note
