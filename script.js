@@ -610,7 +610,7 @@ async function addLinkToSourceNote(sourceNote, heading, createdNote) {
     }
 
     // Create the link text
-    const linkText = `\n[[${createdNote.title}]]`
+    const linkText = `\nLink: [[${createdNote.title}]]`
 
     await logToNote(`Inserting link at position ${lastIndex + 1}: ${linkText.trim()}`, 'DEBUG')
 
