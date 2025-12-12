@@ -163,7 +163,10 @@ async function extractBookReview() {
  */
 async function processContent(sourceNote, pair) {
   // Get the heading name from settings or derive from hashtag
+  console.log(`DEBUG: DataStore.settings.headingName = "${DataStore.settings.headingName}"`)
+  console.log(`DEBUG: pair.hashtag = "${pair.hashtag}"`)
   const headingName = DataStore.settings.headingName || pair.hashtag.substring(1)
+  console.log(`DEBUG: Using headingName = "${headingName}"`)
 
   // Find the heading
   const contentHeading = findHeading(sourceNote, headingName, 2)
