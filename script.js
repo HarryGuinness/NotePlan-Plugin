@@ -6,6 +6,48 @@
  */
 
 /**
+ * Plugin initialization - called when plugin loads
+ */
+export async function init(): Promise<void> {
+  try {
+    console.log('Book Review Helper Plugin v1.0.0 initializing...')
+    await logToNote('Book Review Helper Plugin initialized successfully', 'INFO')
+    await logToNote(`Plugin ID: harryguinness.BookReview`, 'INFO')
+    await logToNote(`Available commands: onEditorWillSave, extractBookReview, testPlugin`, 'INFO')
+    console.log('Plugin initialized - check Plugin Log note for details')
+  } catch (error) {
+    console.log(`Error during plugin initialization: ${String(error)}`)
+  }
+}
+
+/**
+ * Test command to verify plugin is working
+ */
+export async function testPlugin(): Promise<void> {
+  try {
+    console.log('Test command executed')
+    await logToNote('Test command executed successfully!', 'INFO')
+    await logToNote(`Current time: ${new Date().toISOString()}`, 'INFO')
+    await logToNote(`DataStore available: ${typeof DataStore !== 'undefined'}`, 'INFO')
+    await logToNote(`Editor available: ${typeof Editor !== 'undefined'}`, 'INFO')
+
+    const note = Editor.note
+    if (note) {
+      await logToNote(`Current note: ${note.title || 'Untitled'} (type: ${note.type})`, 'INFO')
+    } else {
+      await logToNote('No note currently open in editor', 'INFO')
+    }
+
+    await CommandBar.prompt('Plugin Test', 'Test completed! Check the "Plugin Log" note for details.')
+  } catch (error) {
+    const errorMsg = `Test command error: ${String(error)}`
+    console.log(errorMsg)
+    await logToNote(errorMsg, 'ERROR')
+    await CommandBar.prompt('Test Failed', errorMsg)
+  }
+}
+
+/**
  * Log a message to the Plugin Log note
  * @param {string} message - The message to log
  * @param {string} level - Log level: 'INFO', 'ERROR', 'DEBUG'
@@ -13,16 +55,24 @@
 async function logToNote(message: string, level: string = 'INFO'): Promise<void> {
   try {
     const logNoteName = 'Plugin Log'
-    let logNote = DataStore.projectNoteByTitle(logNoteName, false, false)
+    // Get array of matching notes (using true for returnMultiple)
+    const logNotes = DataStore.projectNoteByTitle(logNoteName, false, true)
+
+    let logNote = null
 
     // Create the log note if it doesn't exist
-    if (!logNote || logNote.length === 0) {
+    if (!logNotes || logNotes.length === 0) {
+      console.log('Creating new Plugin Log note...')
       const newFilename = DataStore.newNote(logNoteName, '')
       if (newFilename) {
+        console.log(`Created note with filename: ${newFilename}`)
         logNote = DataStore.projectNoteByFilename(newFilename)
+      } else {
+        console.log('Failed to create new note - newNote() returned null')
+        return
       }
     } else {
-      logNote = logNote[0]
+      logNote = logNotes[0]
     }
 
     if (!logNote) {
@@ -33,13 +83,14 @@ async function logToNote(message: string, level: string = 'INFO'): Promise<void>
     // Format the log entry with timestamp
     const now = new Date()
     const timestamp = now.toISOString().replace('T', ' ').substring(0, 19)
-    const logEntry = `[${timestamp}] [${level}] ${message}\n`
+    const logEntry = `[${timestamp}] [${level}] ${message}`
 
     // Append to the note
     logNote.appendParagraph(logEntry, 'text')
+    console.log(`Logged to Plugin Log: ${logEntry}`)
 
   } catch (error) {
-    console.log('Error writing to Plugin Log:', error)
+    console.log(`Error writing to Plugin Log: ${String(error)}`)
   }
 }
 

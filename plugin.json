@@ -8,6 +8,19 @@
   "plugin.script": "script.js",
   "plugin.commands": [
     {
+      "name": "init",
+      "description": "Initialize the plugin and create log entries",
+      "jsFunction": "init",
+      "hidden": true
+    },
+    {
+      "name": "Test Plugin",
+      "description": "Test if the Book Review Helper plugin is working correctly",
+      "jsFunction": "testPlugin",
+      "alias": ["test"],
+      "hidden": false
+    },
+    {
       "name": "onEditorWillSave",
       "description": "Processes book reviews when a Daily Note with #bookreview is saved",
       "jsFunction": "onEditorWillSave",
