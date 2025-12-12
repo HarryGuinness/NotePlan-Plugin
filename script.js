@@ -9,10 +9,7 @@
 async function init() {
   try {
     console.log('Harry\'s Auto Filer Plugin v1.5.0 initializing...')
-    await logToNote('Harry\'s Auto Filer Plugin initialized successfully', 'INFO')
-    await logToNote(`Plugin ID: harryguinness.BookReview`, 'INFO')
-    await logToNote(`Available commands: onEditorWillSave, extractContent, testPlugin`, 'INFO')
-    console.log('Plugin initialized - check Plugin Log note for details')
+    console.log('Plugin initialized')
   } catch (error) {
     console.log(`Error during plugin initialization: ${String(error)}`)
   }
@@ -24,71 +21,22 @@ async function init() {
 async function testPlugin() {
   try {
     console.log('Test command executed')
-    await logToNote('Test command executed successfully!', 'INFO')
-    await logToNote(`Current time: ${new Date().toISOString()}`, 'INFO')
-    await logToNote(`DataStore available: ${typeof DataStore !== 'undefined'}`, 'INFO')
-    await logToNote(`Editor available: ${typeof Editor !== 'undefined'}`, 'INFO')
+    console.log(`Current time: ${new Date().toISOString()}`)
+    console.log(`DataStore available: ${typeof DataStore !== 'undefined'}`)
+    console.log(`Editor available: ${typeof Editor !== 'undefined'}`)
 
     const note = Editor.note
     if (note) {
-      await logToNote(`Current note: ${note.title || 'Untitled'} (type: ${note.type})`, 'INFO')
+      console.log(`Current note: ${note.title || 'Untitled'} (type: ${note.type})`)
     } else {
-      await logToNote('No note currently open in editor', 'INFO')
+      console.log('No note currently open in editor')
     }
 
-    await CommandBar.prompt('Plugin Test', 'Test completed! Check the "Plugin Log" note for details.')
+    await CommandBar.prompt('Plugin Test', 'Test completed! Check the console for details.')
   } catch (error) {
     const errorMsg = `Test command error: ${String(error)}`
     console.log(errorMsg)
-    await logToNote(errorMsg, 'ERROR')
     await CommandBar.prompt('Test Failed', errorMsg)
-  }
-}
-
-/**
- * Log a message to the Plugin Log note
- * @param {string} message - The message to log
- * @param {string} level - Log level: 'INFO', 'ERROR', 'DEBUG'
- */
-async function logToNote(message, level = 'INFO') {
-  try {
-    const logNoteName = 'Plugin Log'
-    // Get array of matching notes (using true for returnMultiple)
-    const logNotes = DataStore.projectNoteByTitle(logNoteName, false, true)
-
-    let logNote = null
-
-    // Create the log note if it doesn't exist
-    if (!logNotes || logNotes.length === 0) {
-      console.log('Creating new Plugin Log note...')
-      const newFilename = DataStore.newNote(logNoteName, '')
-      if (newFilename) {
-        console.log(`Created note with filename: ${newFilename}`)
-        logNote = DataStore.projectNoteByFilename(newFilename)
-      } else {
-        console.log('Failed to create new note - newNote() returned null')
-        return
-      }
-    } else {
-      logNote = logNotes[0]
-    }
-
-    if (!logNote) {
-      console.log('Failed to create or access Plugin Log note')
-      return
-    }
-
-    // Format the log entry with timestamp
-    const now = new Date()
-    const timestamp = now.toISOString().replace('T', ' ').substring(0, 19)
-    const logEntry = `[${timestamp}] [${level}] ${message}`
-
-    // Append to the note
-    logNote.appendParagraph(logEntry, 'text')
-    console.log(`Logged to Plugin Log: ${logEntry}`)
-
-  } catch (error) {
-    console.log(`Error writing to Plugin Log: ${String(error)}`)
   }
 }
 
@@ -147,39 +95,29 @@ function findMatchingHashtag(note) {
  */
 async function onEditorWillSave() {
   try {
-    await logToNote('onEditorWillSave triggered', 'DEBUG')
-
     const note = Editor.note
 
     // Only process if note exists
     if (!note) {
-      await logToNote('No note in editor, skipping', 'DEBUG')
       return
     }
 
-    await logToNote(`Processing note: ${note.title || 'Untitled'} (type: ${note.type})`, 'DEBUG')
-
     // Only process Calendar notes (Daily Notes)
     if (note.type !== 'Calendar') {
-      await logToNote('Not a Calendar note, skipping', 'DEBUG')
       return
     }
 
     // Check if note has any configured hashtag
     const matchingPair = findMatchingHashtag(note)
     if (!matchingPair) {
-      await logToNote('No configured hashtags found, skipping', 'DEBUG')
       return
     }
-
-    await logToNote(`Found ${matchingPair.hashtag} tag, processing...`, 'INFO')
 
     // Process the content
     await processContent(note, matchingPair)
   } catch (error) {
     const errorMsg = `Error in onEditorWillSave: ${error.message || error}`
     console.log(errorMsg)
-    await logToNote(errorMsg, 'ERROR')
   }
 }
 
@@ -188,33 +126,25 @@ async function onEditorWillSave() {
  */
 async function extractContent() {
   try {
-    await logToNote('Manual extractContent command triggered', 'INFO')
-
     const note = Editor.note
 
     if (!note) {
-      await logToNote('No note open for manual extraction', 'ERROR')
       await CommandBar.prompt('No note is currently open', 'Please open a note first')
       return
     }
 
-    await logToNote(`Manual extraction from note: ${note.title || 'Untitled'}`, 'INFO')
-
     // Check if note has any configured hashtag
     const matchingPair = findMatchingHashtag(note)
     if (!matchingPair) {
-      await logToNote('No configured hashtags found in note', 'ERROR')
       await CommandBar.prompt('No configured hashtags found', 'This note does not contain any of the configured hashtags. Please check your plugin settings.')
       return
     }
 
     await processContent(note, matchingPair)
-    await logToNote('Manual extraction completed successfully', 'INFO')
     await CommandBar.prompt('Content Processed', `Content for ${matchingPair.hashtag} has been extracted and a new note has been created.`)
   } catch (error) {
     const errorMsg = `Error in extractContent: ${error.message || error}`
     console.log(errorMsg)
-    await logToNote(errorMsg, 'ERROR')
     await CommandBar.prompt('Error', `Failed to extract content: ${error.message}`)
   }
 }
@@ -232,8 +162,6 @@ async function extractBookReview() {
  * @param {Object} pair - The hashtag-folder pair {hashtag, folder}
  */
 async function processContent(sourceNote, pair) {
-  await logToNote(`Starting processContent for: ${sourceNote.title || 'Untitled'} with ${pair.hashtag}`, 'DEBUG')
-
   // Get the heading name from settings or derive from hashtag
   const headingName = DataStore.settings.headingName || pair.hashtag.substring(1)
 
@@ -243,11 +171,8 @@ async function processContent(sourceNote, pair) {
   if (!contentHeading) {
     const msg = `No "## ${headingName}" heading found in note`
     console.log(msg)
-    await logToNote(msg, 'INFO')
     return
   }
-
-  await logToNote(`Found "## ${headingName}" heading`, 'DEBUG')
 
   // Extract content under the heading
   const extractedContent = await extractContentUnderHeading(sourceNote, contentHeading)
@@ -255,11 +180,8 @@ async function processContent(sourceNote, pair) {
   if (!extractedContent || extractedContent.trim().length === 0) {
     const msg = `No content found under ${headingName} heading`
     console.log(msg)
-    await logToNote(msg, 'INFO')
     return
   }
-
-  await logToNote(`Extracted ${extractedContent.length} characters of content`, 'DEBUG')
 
   // Extract title from content
   const contentTitle = extractContentTitle(extractedContent)
@@ -267,11 +189,8 @@ async function processContent(sourceNote, pair) {
   if (!contentTitle) {
     const msg = 'Could not determine content title'
     console.log(msg)
-    await logToNote(msg, 'ERROR')
     return
   }
-
-  await logToNote(`Extracted title: "${contentTitle}"`, 'INFO')
 
   // Check if note already exists
   const noteTitle = contentTitle
@@ -283,11 +202,8 @@ async function processContent(sourceNote, pair) {
   if (hasLinkMarker && existingNotes.length > 0) {
     const msg = `Content already processed (found ${existingNotes.length} existing note(s) and link marker)`
     console.log(msg)
-    await logToNote(msg, 'INFO')
     return
   }
-
-  await logToNote(`Creating new note: "${noteTitle}"`, 'INFO')
 
   // Create the note
   const createdNote = await createNote(noteTitle, extractedContent, sourceNote, pair)
@@ -295,16 +211,11 @@ async function processContent(sourceNote, pair) {
   if (!createdNote) {
     const msg = 'Failed to create note'
     console.log(msg)
-    await logToNote(msg, 'ERROR')
     return
   }
 
-  await logToNote(`Note created successfully: ${createdNote.filename || noteTitle}`, 'INFO')
-
   // Add link to the note in the Daily Note
   await addLinkToSourceNote(sourceNote, contentHeading, createdNote)
-  await logToNote('Added link to source note', 'INFO')
-  await logToNote('Content processing completed successfully', 'INFO')
 }
 
 /**
@@ -352,11 +263,7 @@ async function extractContentUnderHeading(note, heading) {
     }
   }
 
-  await logToNote(`Total paragraphs in note: ${paragraphs.length}`, 'DEBUG')
-  await logToNote(`Heading index: ${headingIndex}`, 'DEBUG')
-
   if (headingIndex === -1) {
-    await logToNote('Heading index is -1, returning empty', 'DEBUG')
     return ''
   }
 
@@ -366,25 +273,19 @@ async function extractContentUnderHeading(note, heading) {
   for (let i = headingIndex + 1; i < paragraphs.length; i++) {
     const para = paragraphs[i]
 
-    await logToNote(`Para ${i}: type="${para.type}", headingLevel=${para.headingLevel}, content="${para.content ? para.content.substring(0, 50) : 'null'}"`, 'DEBUG')
-
     // Stop if we hit another H2 heading
     if (para.type === 'title' && para.headingLevel <= heading.headingLevel) {
-      await logToNote(`Stopping at para ${i} - hit heading of level ${para.headingLevel}`, 'DEBUG')
       break
     }
 
     // Skip empty paragraphs at the start
     if (content.length === 0 && para.content.trim().length === 0) {
-      await logToNote(`Skipping empty para ${i} at start`, 'DEBUG')
       continue
     }
 
-    await logToNote(`Adding para ${i} to content`, 'DEBUG')
     content.push(para.content)
   }
 
-  await logToNote(`Collected ${content.length} paragraphs`, 'DEBUG')
   return content.join('\n').trim()
 }
 
@@ -513,15 +414,11 @@ async function createNote(title, content, sourceNote, pair) {
     const folderPath = pair.folder
     const filename = `${folderPath}/${title}.md`
 
-    await logToNote(`Attempting to create note in folder: ${folderPath}`, 'DEBUG')
-
     // Format the source note link
     const sourceDateStr = sourceNote.date ? sourceNote.date.toISOString().split('T')[0] : 'Daily Note'
     const sourceLink = sourceNote.type === 'Calendar' && sourceNote.date
       ? `[[${sourceNote.date.toISOString().split('T')[0]}]]`
       : `[[${sourceNote.title}]]`
-
-    await logToNote(`Source link: ${sourceLink}`, 'DEBUG')
 
     // Clean the content (remove H3 title, duplicate title line, and the configured hashtag)
     const cleanedContent = cleanContent(content, pair.hashtag, title)
@@ -538,11 +435,8 @@ Reviewed on: ${sourceLink}
     if (!newFilename) {
       const msg = `Failed to create note file in ${folderPath}. Does the folder exist?`
       console.log(msg)
-      await logToNote(msg, 'ERROR')
       return null
     }
-
-    await logToNote(`Note file created: ${newFilename}`, 'DEBUG')
 
     // Get the note object
     const createdNote = DataStore.projectNoteByFilename(newFilename)
@@ -550,20 +444,16 @@ Reviewed on: ${sourceLink}
     if (!createdNote) {
       const msg = 'Failed to retrieve created note'
       console.log(msg)
-      await logToNote(msg, 'ERROR')
       return null
     }
 
     // Set the content
     createdNote.content = noteContent
 
-    await logToNote('Note content set successfully', 'DEBUG')
-
     return createdNote
   } catch (error) {
     const errorMsg = `Error creating note: ${error.message || error}`
     console.log(errorMsg)
-    await logToNote(errorMsg, 'ERROR')
     return null
   }
 }
@@ -591,7 +481,7 @@ async function addLinkToSourceNote(sourceNote, heading, createdNote) {
     }
 
     if (headingIndex === -1) {
-      await logToNote('Could not find heading in source note paragraphs', 'ERROR')
+      console.log('Could not find heading in source note paragraphs')
       return
     }
 
@@ -612,14 +502,11 @@ async function addLinkToSourceNote(sourceNote, heading, createdNote) {
     // Create the link text
     const linkText = `\nLink: [[${createdNote.title}]]`
 
-    await logToNote(`Inserting link at position ${lastIndex + 1}: ${linkText.trim()}`, 'DEBUG')
-
     // Insert the link at the end of the section
     sourceNote.insertParagraph(linkText, lastIndex + 1, 'text')
 
   } catch (error) {
     const errorMsg = `Error adding link to source note: ${error.message || error}`
     console.log(errorMsg)
-    await logToNote(errorMsg, 'ERROR')
   }
 }
