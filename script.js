@@ -8,7 +8,7 @@
  */
 async function init() {
   try {
-    console.log('Harry\'s Auto Filer Plugin v1.5.0 initializing...')
+    console.log('Harry\'s Auto Filer Plugin v1.5.1 initializing...')
     console.log('Plugin initialized')
   } catch (error) {
     console.log(`Error during plugin initialization: ${String(error)}`)

@@ -4,7 +4,7 @@
   "plugin.name": "Harry's Auto Filer",
   "plugin.description": "Automatically extracts content from Daily Notes based on hashtags and files them into designated folders",
   "plugin.author": "Harry Guinness",
-  "plugin.version": "1.5.0",
+  "plugin.version": "1.5.1",
   "plugin.script": "script.js",
   "plugin.commands": [
     {
@@ -21,18 +21,15 @@
       "hidden": false
     },
     {
-      "name": "onEditorWillSave",
-      "description": "Processes content when a Daily Note with configured hashtags is saved",
-      "jsFunction": "onEditorWillSave",
-      "hidden": true
-    },
-    {
       "name": "Extract Content",
       "description": "Manually extract content from the current note based on configured hashtags",
       "jsFunction": "extractContent",
       "alias": ["extract", "file"],
       "hidden": false
     }
+  ],
+  "plugin.triggers": [
+    "onEditorWillSave"
   ],
   "plugin.settings": [
     {
