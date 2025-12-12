@@ -241,8 +241,8 @@ function checkForExistingLink(note: Note, heading: Paragraph): boolean {
  */
 async function createBookReviewNote(title: string, content: string, sourceNote: Note): Promise<?Note> {
   try {
-    // Create the folder path
-    const folderPath = '30 - Resources/Books Read'
+    // Get the folder path from settings
+    const folderPath = DataStore.settings.bookReviewFolder || '30 - Resources/Books Read'
     const filename = `${folderPath}/${title}.md`
 
     // Format the source note link
